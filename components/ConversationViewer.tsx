@@ -45,16 +45,11 @@ export default function ConversationViewer() {
             try {
                 const text = await file.text();
                 const data = JSON.parse(text);
-                // Filter out conversations with no meaningful content
                 const nonEmptyConversations = data.filter((conv: Conversation) => {
-                    // Check if there are any messages
                     if (!conv.chat_messages || conv.chat_messages.length === 0) return false;
 
-                    // Check if at least one message has content
                     return conv.chat_messages.some(msg =>
-                        // Message has text content
                         msg.text?.trim() ||
-                        // Or message has attachments with content
                         msg.attachments?.some(att => att.extracted_content?.trim())
                     );
                 });
@@ -79,9 +74,7 @@ export default function ConversationViewer() {
     };
 
     const filteredConversations = conversations?.filter(conv =>
-        // First check if there are any messages
         conv.chat_messages.length > 0 &&
-        // Then apply search filter
         (conv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             conv.chat_messages.some(msg =>
                 msg.text.toLowerCase().includes(searchTerm.toLowerCase())
