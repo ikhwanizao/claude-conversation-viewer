@@ -36,6 +36,19 @@ export default function ConversationViewer() {
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
+    const sortMessages = (messages: ChatMessage[]) => {
+        return [...messages].sort((a, b) => {
+            // First compare timestamps
+            const timeComparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+
+            // If timestamps are different, use that
+            if (timeComparison !== 0) return timeComparison;
+
+            // For same timestamps, ensure human messages come first
+            return a.sender === 'human' ? -1 : 1;
+        });
+    };
+
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         setError(null);
@@ -47,7 +60,7 @@ export default function ConversationViewer() {
                 const data = JSON.parse(text);
                 const nonEmptyConversations = data
                     .filter((conv: Conversation) => {
-                        if (!conv.chat_messages || conv.chat_messages.length === 0) return false;
+                        if (!conv.chat_messages?.length) return false;
                         return conv.chat_messages.some(msg =>
                             msg.text?.trim() ||
                             msg.attachments?.some(att => att.extracted_content?.trim())
@@ -55,9 +68,7 @@ export default function ConversationViewer() {
                     })
                     .map((conv: Conversation) => ({
                         ...conv,
-                        chat_messages: [...conv.chat_messages].sort(
-                            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                        )
+                        chat_messages: sortMessages(conv.chat_messages)
                     }));
 
                 setConversations(nonEmptyConversations);
@@ -169,10 +180,11 @@ export default function ConversationViewer() {
                                                     {formatDate(msg.created_at)}
                                                 </span>
                                             </div>
-                                            <p className="text-gray-200 whitespace-pre-wrap">
+                                            {/* Update this part */}
+                                            <div className="text-gray-200 whitespace-pre-wrap break-words max-w-full overflow-x-auto">
                                                 {msg.text}
-                                            </p>
-                                            {/* Display attachments */}
+                                            </div>
+                                            {/* And update the attachments part */}
                                             {msg.attachments.length > 0 && (
                                                 <div className="mt-4 space-y-2">
                                                     {msg.attachments.map((attachment, index) => (
@@ -184,7 +196,7 @@ export default function ConversationViewer() {
                                                                 </span>
                                                             </div>
                                                             {attachment.extracted_content && (
-                                                                <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono bg-gray-800 p-2 rounded mt-2 overflow-x-auto">
+                                                                <pre className="text-sm text-gray-300 whitespace-pre-wrap break-words font-mono bg-gray-800 p-2 rounded mt-2 overflow-x-auto">
                                                                     {attachment.extracted_content}
                                                                 </pre>
                                                             )}
