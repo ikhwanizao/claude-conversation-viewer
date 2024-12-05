@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, MessageCircle, Calendar, Search, AlertCircle } from 'lucide-react';
+import { Upload, MessageCircle, Calendar, Search, AlertCircle, Paperclip } from 'lucide-react';
 
 interface Attachment {
     file_name: string;
@@ -45,7 +45,20 @@ export default function ConversationViewer() {
             try {
                 const text = await file.text();
                 const data = JSON.parse(text);
-                setConversations(data);
+                // Filter out conversations with no meaningful content
+                const nonEmptyConversations = data.filter((conv: Conversation) => {
+                    // Check if there are any messages
+                    if (!conv.chat_messages || conv.chat_messages.length === 0) return false;
+
+                    // Check if at least one message has content
+                    return conv.chat_messages.some(msg =>
+                        // Message has text content
+                        msg.text?.trim() ||
+                        // Or message has attachments with content
+                        msg.attachments?.some(att => att.extracted_content?.trim())
+                    );
+                });
+                setConversations(nonEmptyConversations);
             } catch (err) {
                 setError('Error reading file. Please make sure it\'s a valid JSON file.');
                 console.error('Error parsing JSON:', err);
@@ -66,10 +79,13 @@ export default function ConversationViewer() {
     };
 
     const filteredConversations = conversations?.filter(conv =>
-        conv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        conv.chat_messages.some(msg =>
-            msg.text.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+        // First check if there are any messages
+        conv.chat_messages.length > 0 &&
+        // Then apply search filter
+        (conv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            conv.chat_messages.some(msg =>
+                msg.text.toLowerCase().includes(searchTerm.toLowerCase())
+            ))
     );
 
     return (
@@ -140,8 +156,8 @@ export default function ConversationViewer() {
                                     >
                                         <div
                                             className={`max-w-[80%] rounded-lg p-4 ${msg.sender === 'assistant'
-                                                    ? 'bg-gray-700'
-                                                    : 'bg-gray-600'
+                                                ? 'bg-gray-700'
+                                                : 'bg-gray-600'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-2 mb-2">
@@ -156,12 +172,22 @@ export default function ConversationViewer() {
                                             <p className="text-gray-200 whitespace-pre-wrap">
                                                 {msg.text}
                                             </p>
+                                            {/* Display attachments */}
                                             {msg.attachments.length > 0 && (
-                                                <div className="mt-2 pt-2 border-t border-gray-600">
-                                                    <div className="text-sm text-gray-400">Attachments:</div>
+                                                <div className="mt-4 space-y-2">
                                                     {msg.attachments.map((attachment, index) => (
-                                                        <div key={index} className="text-sm text-blue-400">
-                                                            📎 {attachment.file_name}
+                                                        <div key={index} className="bg-gray-900 rounded p-3">
+                                                            <div className="flex items-center gap-2 mb-2 text-gray-400">
+                                                                <Paperclip className="h-4 w-4" />
+                                                                <span className="text-sm font-medium">
+                                                                    {attachment.file_name}
+                                                                </span>
+                                                            </div>
+                                                            {attachment.extracted_content && (
+                                                                <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono bg-gray-800 p-2 rounded mt-2 overflow-x-auto">
+                                                                    {attachment.extracted_content}
+                                                                </pre>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
