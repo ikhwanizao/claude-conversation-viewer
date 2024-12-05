@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, Search, AlertCircle, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { Conversation } from '../types';
@@ -10,6 +10,18 @@ export default function ConversationList() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        try {
+            const storedConversations = localStorage.getItem('conversations');
+            if (storedConversations) {
+                setConversations(JSON.parse(storedConversations));
+            }
+        } catch (err) {
+            console.error('Error loading conversations:', err);
+            // Don't set error here as we want the upload interface to be shown
+        }
+    }, []);
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -29,10 +41,11 @@ export default function ConversationList() {
                         );
                     });
 
-                // Store conversations in localStorage for persistence
                 if (nonEmptyConversations.length > 0) {
                     localStorage.setItem('conversations', JSON.stringify(nonEmptyConversations));
                     setConversations(nonEmptyConversations);
+                } else {
+                    setError('No valid conversations found in the file');
                 }
             } catch (err) {
                 setError('Error reading file. Please make sure it\'s a valid JSON file.');

@@ -21,18 +21,42 @@ const sortMessages = (messages: ChatMessage[]) => {
 
 export default function ConversationViewer({ conversationId }: ConversationViewerProps) {
     const [conversation, setConversation] = useState<Conversation | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const storedData = localStorage.getItem('conversations');
-        if (storedData) {
+        if (!storedData) {
+            setError('No conversations found. Please upload a conversations file.');
+            return;
+        }
+
+        try {
             const conversations = JSON.parse(storedData);
             const conv = conversations.find((c: Conversation) => c.uuid === conversationId);
             if (conv) {
                 conv.chat_messages = sortMessages(conv.chat_messages);
                 setConversation(conv);
+            } else {
+                setError('Conversation not found');
             }
+        } catch {
+            setError('Error loading conversation data');
         }
     }, [conversationId]);
+
+    if (error) {
+        return (
+            <div className="max-w-4xl mx-auto p-4 text-gray-200">
+                <Link href="/" className="flex items-center text-blue-400 hover:text-blue-300 mb-4">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to conversations
+                </Link>
+                <div className="text-center mt-8 bg-gray-800 p-6 rounded-lg">
+                    <p className="text-red-400">{error}</p>
+                </div>
+            </div>
+        );
+    }
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleString('en-US', {
@@ -83,8 +107,8 @@ export default function ConversationViewer({ conversationId }: ConversationViewe
                         >
                             <div
                                 className={`max-w-[80%] rounded-lg p-4 ${msg.sender === 'assistant'
-                                        ? 'bg-gray-700'
-                                        : 'bg-gray-600'
+                                    ? 'bg-gray-700'
+                                    : 'bg-gray-600'
                                     }`}
                             >
                                 <div className="flex items-center gap-2 mb-2">
