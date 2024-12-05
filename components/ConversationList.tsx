@@ -19,7 +19,6 @@ export default function ConversationList() {
             }
         } catch (err) {
             console.error('Error loading conversations:', err);
-            // Don't set error here as we want the upload interface to be shown
         }
     }, []);
 
