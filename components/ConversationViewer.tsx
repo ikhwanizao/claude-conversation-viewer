@@ -45,14 +45,21 @@ export default function ConversationViewer() {
             try {
                 const text = await file.text();
                 const data = JSON.parse(text);
-                const nonEmptyConversations = data.filter((conv: Conversation) => {
-                    if (!conv.chat_messages || conv.chat_messages.length === 0) return false;
+                const nonEmptyConversations = data
+                    .filter((conv: Conversation) => {
+                        if (!conv.chat_messages || conv.chat_messages.length === 0) return false;
+                        return conv.chat_messages.some(msg =>
+                            msg.text?.trim() ||
+                            msg.attachments?.some(att => att.extracted_content?.trim())
+                        );
+                    })
+                    .map((conv: Conversation) => ({
+                        ...conv,
+                        chat_messages: [...conv.chat_messages].sort(
+                            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                        )
+                    }));
 
-                    return conv.chat_messages.some(msg =>
-                        msg.text?.trim() ||
-                        msg.attachments?.some(att => att.extracted_content?.trim())
-                    );
-                });
                 setConversations(nonEmptyConversations);
             } catch (err) {
                 setError('Error reading file. Please make sure it\'s a valid JSON file.');
