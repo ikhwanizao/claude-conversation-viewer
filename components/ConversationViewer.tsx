@@ -38,13 +38,10 @@ export default function ConversationViewer() {
 
     const sortMessages = (messages: ChatMessage[]) => {
         return [...messages].sort((a, b) => {
-            // First compare timestamps
             const timeComparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
 
-            // If timestamps are different, use that
             if (timeComparison !== 0) return timeComparison;
 
-            // For same timestamps, ensure human messages come first
             return a.sender === 'human' ? -1 : 1;
         });
     };
